@@ -974,7 +974,48 @@ sudo ./svc.sh status
 
 Trên GitHub, vào **Settings → Actions → Runners** — runner của bạn sẽ hiển thị trạng thái **Idle** (sẵn sàng nhận job).
 
-#### 4.3.4. Đảm bảo Docker hoạt động trong WSL
+---
+
+#### 4.3.5. Xóa runner và cài lại từ đầu
+
+Nếu cần xóa hoàn toàn runner để cài lại (sai cấu hình, đổi repo, đổi label...), thực hiện theo thứ tự:
+
+**Bước 1: Dừng và gỡ service**
+
+```bash
+cd ~/actions-runner
+sudo ./svc.sh stop
+sudo ./svc.sh uninstall
+```
+
+**Bước 2: Xóa đăng ký runner khỏi GitHub**
+
+```bash
+./config.sh remove --token <REMOVE_TOKEN>
+```
+
+Lấy `<REMOVE_TOKEN>`: vào GitHub → **Settings → Actions → Runners** → click vào runner → **Remove runner** → GitHub hiển thị token dùng một lần.
+
+> Nếu muốn xóa nhanh mà không cần token (runner đã offline), vào GitHub → **Settings → Actions → Runners** → click runner → **Remove runner** → xác nhận. Runner bị xóa khỏi GitHub dù máy local chưa chạy lệnh `config.sh remove`.
+
+**Bước 3: Xóa thư mục runner**
+
+```bash
+cd ~
+rm -rf ~/actions-runner
+```
+
+**Bước 4: Cài lại từ đầu**
+
+Tạo lại thư mục và làm lại từ mục 4.3.1:
+
+```bash
+mkdir -p ~/actions-runner && cd ~/actions-runner
+```
+
+Vào GitHub → **Settings → Actions → Runners → New self-hosted runner** để lấy token cài đặt mới.
+
+---
 
 ```bash
 docker --version
