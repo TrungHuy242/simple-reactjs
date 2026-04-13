@@ -112,21 +112,49 @@ Sau lab này, học viên sẽ:
 
 ---
 
-### 2.2. Bước 1: Copy source code lên máy chủ
+### 2.2. Bước 1: Lấy source code về máy chủ
 
-Mở **Terminal** (PowerShell trên Windows hoặc Terminal trên macOS/Linux), di chuyển vào thư mục dự án và copy source lên máy chủ Ubuntu:
+Có hai cách để đưa source code lên máy chủ. Chọn một trong hai:
+
+---
+
+#### Cách 1: Dùng `git clone` từ GitHub (khuyến nghị)
+
+Cách này không cần copy file từ máy local. Sau khi SSH vào máy chủ (xem Bước 2), chạy lệnh:
 
 ```bash
-scp -r . gianglt@localhost:~/simple-reactjs/
+git clone https://github.com/gianglt-dau/simple-reactjs.git
+cd simple-reactjs
+```
+
+**Ưu điểm:**
+- Không cần cài gì trên máy local ngoài Git
+- Đồng bộ trực tiếp từ GitHub, dễ cập nhật về sau bằng `git pull`
+- Phù hợp khi đăng nhập VPS từ nhiều máy khác nhau
+
+> **Kết quả mong đợi:** Thư mục `~/simple-reactjs/` được tạo tự động với đầy đủ source code.
+
+---
+
+#### Cách 2: Dùng `scp` — copy trực tiếp từ máy local
+
+Mở **Terminal** trên máy local, di chuyển vào thư mục dự án và copy lên máy chủ Ubuntu:
+
+```bash
+scp -r . gianglt@<IP_VPS>:~/simple-reactjs/
 ```
 
 **Giải thích:**
 
 - `.`: toàn bộ thư mục hiện tại (source code)
-- `gianglt@localhost`: username và địa chỉ IP máy chủ Ubuntu
+- `gianglt@<IP_VPS>`: username và địa chỉ IP máy chủ Ubuntu
 - `~/simple-reactjs/`: thư mục đích trong home directory của máy chủ
 
 > **Kết quả mong đợi:** Các file được copy thành công, không có thông báo lỗi.
+
+---
+
+> **Lưu ý thứ tự:** Nếu chọn **Cách 1 (git clone)**, hãy SSH vào máy chủ trước (Bước 2), cài đặt môi trường (Bước 3–4), rồi quay lại clone. Nếu chọn **Cách 2 (scp)**, thực hiện đúng thứ tự các bước như dưới đây.
 
 ---
 
@@ -162,15 +190,30 @@ sudo apt update && sudo apt upgrade -y
 
 ---
 
-### 2.5. Bước 4: Cài đặt Node.js và Nginx
+### 2.5. Bước 4: Cài đặt Git, Node.js và Nginx
 
 ```bash
-sudo apt install nodejs npm nginx -y
+sudo apt install -y git nodejs npm nginx
+
+
+
 ```
+
+
+Nâng cấp Node
+````
+sudo apt remove -y nodejs npm
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v
+npm -v
+````
+
 
 Kiểm tra phiên bản:
 
 ```bash
+git --version
 node -v
 npm -v
 ```
@@ -335,12 +378,98 @@ Mở trình duyệt trên Windows và truy cập `http://localhost`.
 
 ---
 
-### 2.11. Cập nhật ứng dụng (khi có thay đổi code)
+### 2.10b. Xử lý khi cổng 80 đã bị chiếm
 
-Khi có thay đổi mới, từ **Terminal** copy source mới lên máy chủ:
+Nếu sau khi `sudo systemctl reload nginx` ứng dụng không hiển thị, hoặc `sudo nginx -t` báo lỗi về cổng, rất có thể cổng 80 đang bị một tiến trình khác (thường là Apache2) chiếm dụng.
+
+**Bước 1: Kiểm tra tiến trình nào đang dùng cổng 80**
 
 ```bash
-scp -r . gianglt@localhost:~/simple-reactjs/
+sudo ss -tlnp | grep :80
+```
+
+Ví dụ kết quả cho thấy Apache2 đang chiếm cổng:
+
+```
+LISTEN  0  511  0.0.0.0:80  0.0.0.0:*  users:(("apache2",pid=1234,...))
+```
+
+---
+
+**Cách xử lý 1: Dừng service đang chiếm cổng 80 (nếu được phép)**
+
+```bash
+sudo systemctl stop apache2
+sudo systemctl disable apache2   # Tắt luôn khi khởi động
+sudo systemctl reload nginx
+```
+
+> **Kết quả mong đợi:** Nginx chiếm lại cổng 80. Truy cập `http://<IP_VPS>` hoạt động bình thường.
+
+---
+
+**Cách xử lý 2: Đổi Nginx sang cổng khác (ví dụ 8080)**
+
+Nếu không thể dừng service kia, chỉnh file cấu hình Nginx để dùng cổng khác:
+
+```bash
+sudo nano /etc/nginx/sites-available/simple-reactjs
+```
+
+Thay `listen 80;` thành `listen 8080;`:
+
+```nginx
+server {
+    listen 8080;
+    server_name localhost;
+    root /var/www/simple-reactjs;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    ...
+}
+```
+
+Kiểm tra cú pháp và reload:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Mở cổng 8080 trên firewall (nếu dùng `ufw`):
+
+```bash
+sudo ufw allow 8080
+```
+
+Truy cập ứng dụng tại `http://<IP_VPS>:8080`.
+
+> **Lưu ý:** Nếu dùng cloud provider (AWS, GCP, Azure, DigitalOcean...), nhớ mở cổng 8080 trong **Security Group / Firewall Rules** của cloud console, không chỉ trên `ufw`.
+
+---
+
+### 2.11. Cập nhật ứng dụng (khi có thay đổi code)
+
+#### Nếu đã dùng git clone (Cách 1):
+
+SSH vào máy chủ và kéo code mới từ GitHub:
+
+```bash
+cd ~/simple-reactjs
+git pull origin main
+npm run build
+cp -r dist/* /var/www/simple-reactjs/
+```
+
+#### Nếu đã dùng scp (Cách 2):
+
+Từ **Terminal** trên máy local, copy source mới lên máy chủ:
+
+```bash
+scp -r . gianglt@<IP_VPS>:~/simple-reactjs/
 ```
 
 Rồi SSH vào máy chủ và build lại:
