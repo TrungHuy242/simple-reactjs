@@ -8,8 +8,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/ssimple-reactjs
-  CONTAINER_NAME: ssimple-reactjs
+  IMAGE_NAME: ${{ github.repository_owner }}/simple-reactjs
+  CONTAINER_NAME: simple-reactjs
   HOST_PORT: 3000
   CONTAINER_PORT: 80
 

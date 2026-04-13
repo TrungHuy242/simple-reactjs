@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/ssimple-reactjs
+  IMAGE_NAME: ${{ github.repository_owner }}/simple-reactjs
 
 jobs:
   build-and-push:

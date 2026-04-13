@@ -934,6 +934,14 @@ tar xzf ./actions-runner-linux-x64-2.333.1.tar.gz
 
 > **Lưu ý:** Copy lệnh trực tiếp từ trang GitHub để có đúng phiên bản và checksum.
 
+
+**Cấu hình 
+Settings -> Actions -> General
+Workflow permissions : Read and write permissions
+
+
+
+
 **Cấu hình runner (dùng token từ trang GitHub):**
 Tại 
 https://github.com/<OWNER>/simple-reactjs/settings/actions/runners
